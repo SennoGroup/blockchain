@@ -21,7 +21,6 @@ def kyc_register(ctx, args):
         int: The number of addresses to register for KYC
     """
     ok_count = 0
-    print("kyc_register")
 
     if CheckWitness(TOKEN_OWNER):
 
@@ -34,7 +33,6 @@ def kyc_register(ctx, args):
 
                 OnKYCRegister(address)
                 ok_count += 1
-    print("count")
 
     return ok_count
 
@@ -47,7 +45,6 @@ def kyc_status(ctx, args):
     :return:
         bool: Returns the kyc status of an address
     """
-    print("kyc_status")
 
     if len(args) > 0:
         addr = args[0]
@@ -92,24 +89,24 @@ def perform_exchange(ctx):
 
     # TODO: make sure the bonus rate here are correct
     height = GetHeight()
-    height_48hrs = BLOCK_SALE_START + BONUS[0][0]
-    height_week1 = BLOCK_SALE_START + BONUS[1][0]
-    height_week2 = BLOCK_SALE_START + BONUS[2][0]
-    height_week3 = BLOCK_SALE_START + BONUS[3][0]
+    height_48hrs = BLOCK_SALE_START + 11520 # 48 * 60 * 60 / 15
+    height_week1 = BLOCK_SALE_START + 40320 # 7 * 24 * 60 * 60 / 15
+    height_week2 = BLOCK_SALE_START + 80640 # 14 * 24 * 60 * 60 / 15
+    height_week3 = BLOCK_SALE_START + 120960 # 21 * 24 * 60 * 60 / 15
 
-    bonus_48hrs = BONUS[0][1]
-    bonus_week1 = BONUS[1][1]
-    bonus_week2 = BONUS[2][1]
-    bonus_week3 = BONUS[3][1]
+    bonus_48hrs = 20
+    bonus_week1 = 10
+    bonus_week2 = 7
+    bonus_week3 = 3
 
     if height < height_48hrs:
-        exchanged_tokens = exchanged_tokens * (1 + bonus_48hrs)
+        exchanged_tokens = exchanged_tokens * (100 + bonus_48hrs) / 100
     elif height < height_week1:
-        exchanged_tokens = exchanged_tokens * (1 + bonus_week1)
+        exchanged_tokens = exchanged_tokens * (100 + bonus_week1) / 100
     elif height < height_week2:
-        exchanged_tokens = exchanged_tokens * (1 + bonus_week2)
+        exchanged_tokens = exchanged_tokens * (100 + bonus_week2) / 100
     elif height < height_week3:
-        exchanged_tokens = exchanged_tokens * (1 + bonus_week3)
+        exchanged_tokens = exchanged_tokens * (100 + bonus_week3) / 100
 
     # if you want to exchange gas instead of neo, use this
     # exchanged_tokens += attachments[3] * TOKENS_PER_GAS / 100000000
@@ -206,26 +203,27 @@ def calculate_can_exchange(ctx, amount, address, verify_only):
         return False
 
     # if we are in free round, any amount
-    if height > LIMITED_ROUND_END:
-        return True
+    # if height > LIMITED_ROUND_END:
+    #     return True
 
     # check amount in limited round
-    if amount <= MAX_EXCHANGE_LIMITED_ROUND:
+    # if amount <= MAX_EXCHANGE_LIMITED_ROUND:
 
-        # check if they have already exchanged in the limited round
-        r1key = concat(address, LIMITED_ROUND_KEY)
-        has_exchanged = Get(ctx, r1key)
+    #     # check if they have already exchanged in the limited round
+    #     r1key = concat(address, LIMITED_ROUND_KEY)
+    #     has_exchanged = Get(ctx, r1key)
 
-        # if not, then save the exchange for limited round
-        if not has_exchanged:
-            # note that this method can be invoked during the Verification trigger, so we have the
-            # verify_only param to avoid the Storage.Put during the read-only Verification trigger.
-            # this works around a "method Neo.Storage.Put not found in ->" error in InteropService.py
-            # since Verification is read-only and thus uses a StateReader, not a StateMachine
-            if not verify_only:
-                Put(ctx, r1key, True)
-            return True
+    #     # if not, then save the exchange for limited round
+    #     if not has_exchanged:
+    #         # note that this method can be invoked during the Verification trigger, so we have the
+    #         # verify_only param to avoid the Storage.Put during the read-only Verification trigger.
+    #         # this works around a "method Neo.Storage.Put not found in ->" error in InteropService.py
+    #         # since Verification is read-only and thus uses a StateReader, not a StateMachine
+    #         if not verify_only:
+    #             Put(ctx, r1key, True)
+    #         return True
 
-        return False
+    #     return False
 
-    return False
+    # return False
+    return True

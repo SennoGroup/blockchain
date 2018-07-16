@@ -14,16 +14,16 @@ TOKEN_DECIMALS = 8
 # This is the script hash of the address for the owner of the token
 # This can be found in ``neo-python`` with the walet open, use ``wallet`` command
 # TODO to be changed to the MainNet wallet address
-TOKEN_OWNER = b'#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2 39\xdc\xd8\xee\xe9'
+TOKEN_OWNER = b'S\xefB\xc8\xdf!^\xbeZ|z\xe8\x01\xcb\xc3\xac/\xacI)'
 
 TOKEN_CIRC_KEY = b'in_circulation'
 
 TOKEN_TOTAL_SUPPLY = 10000000000 * 100000000  # 10b total supply * 10^8 ( decimals)
 
-# TODO may need to be changed accordingly for presale 
+# TODO may need to be changed accordingly for presale
 TOKEN_INITIAL_AMOUNT = 6000000000 * 100000000  # 6b initial tokens reserved to owners * 10^8
 
-# One neo = 10k tokens * 10^8 
+# One neo = 10k tokens * 10^8
 TOKENS_PER_NEO = 10000 * 100000000
 
 # One gas = 3.2k tokens * 10^8
@@ -35,23 +35,23 @@ MAX_EXCHANGE_LIMITED_ROUND = 500 * 10000 * 100000000
 
 # when to start the crowdsale
 # TODO update the block height to 2483949 (need to calculate again)
-BLOCK_SALE_START = 1
+BLOCK_SALE_START = 755000
 
 # when to end the initial limited round
 # TODO update the block height to 2483949 + 175316 (around 1 month)
-LIMITED_ROUND_END = 1 + 10000
+LIMITED_ROUND_END = 755000 + 10000
 
 KYC_KEY = b'kyc_ok'
 
 LIMITED_ROUND_KEY = b'r1'
 
 # TODO make sure the current bonus structure is correct
-BOUNS = (
-    (int(48 * 60 * 60 / 15), 0.2), # 20% for the first 48hrs
-    (int(7 * 24 * 60 * 60 / 15), 0.1), # 10% for the 1st week
-    (int(14 * 24 * 60 * 60 / 15), 0.07), # 7% for the 2nd week
-    (int(21 * 24 * 60 * 60 / 15), 0.03), # 3% for the 3rd week
-)
+BOUNS = [
+    [11520, 20], # 20% for the first 48hrs = 48 * 60 * 60 / 15
+    [40320, 10], # 10% for the 1st week = 7 * 24 * 60 * 60 / 15
+    [80640, 7], # 7% for the 2nd week = 14 * 24 * 60 * 60 / 15
+    [120960, 3], # 3% for the 3rd week = 21 * 24 * 60 * 60 / 15
+]
 
 OnBurn = RegisterAction('burn', 'amount')
 
@@ -92,7 +92,7 @@ def get_circulation(ctx):
     return Get(ctx, TOKEN_CIRC_KEY)
 
 
-def burn(ctx, amount):
+def burn(ctx, args):
     """
     Burn unsold tokens, main use case is for crowdsale.
 
@@ -100,6 +100,8 @@ def burn(ctx, amount):
     :return:
         int: Whether the tokens were successfully burned or not
     """
+    amount = args[0]
+
     if CheckWitness(TOKEN_OWNER):
         current_in_circulation = Get(ctx, TOKEN_CIRC_KEY)
         new_amount = current_in_circulation + amount
@@ -121,13 +123,3 @@ def burn(ctx, amount):
         return True
     else:
         return False
-
-
-
-
-
-
-
-
-
-
