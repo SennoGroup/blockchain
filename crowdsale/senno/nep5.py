@@ -22,7 +22,12 @@ def handle_nep51(ctx, operation, args):
         return TOKEN_SYMBOL
 
     elif operation == 'totalSupply':
-        return Get(ctx, TOKEN_CIRC_KEY)
+        burned = Get(ctx, BURN_KEY)
+        in_circ = Get(ctx, TOKEN_CIRC_KEY) 
+        if burned:
+            return in_circ - burned
+        else:
+            return in_circ
 
     elif operation == 'balanceOf':
         if len(args) == 1:

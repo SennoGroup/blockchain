@@ -15,6 +15,7 @@ TOKEN_DECIMALS = 8
 # This can be found in ``neo-python`` with the walet open, use ``wallet`` command
 # TODO to be changed to the MainNet wallet address
 TOKEN_OWNER = b'S\xefB\xc8\xdf!^\xbeZ|z\xe8\x01\xcb\xc3\xac/\xacI)'
+# TOKEN_OWNER = b'#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2 39\xdc\xd8\xee\xe9'
 
 TOKEN_CIRC_KEY = b'in_circulation'
 
@@ -35,15 +36,21 @@ MAX_EXCHANGE_LIMITED_ROUND = 500 * 10000 * 100000000
 
 # when to start the crowdsale
 # TODO update the block height to 2483949 (need to calculate again)
-BLOCK_SALE_START = 755000
+# BLOCK_SALE_START = 755000
+# BLOCK_SALE_START = 1
+BLOCK_SALE_START_KEY = b'start_at'
+
 
 # when to end the initial limited round
 # TODO update the block height to 2483949 + 175316 (around 1 month)
-LIMITED_ROUND_END = 755000 + 10000
+# LIMITED_ROUND_END = 755000 + 10000
+# LIMITED_ROUND_END = 1 + 10000 # NO LIMITED ROUND ANYMORE !!!
 
 KYC_KEY = b'kyc_ok'
 
-LIMITED_ROUND_KEY = b'r1'
+BURN_KEY = b'burn_tokens'
+
+# LIMITED_ROUND_KEY = b'r1' # NO LIMITED ROUND ANYMORE !!!
 
 # TODO make sure the current bonus structure is correct
 BOUNS = [
@@ -100,7 +107,7 @@ def burn(ctx, args):
     :return:
         int: Whether the tokens were successfully burned or not
     """
-    amount = args[0]
+    amount = int(args[0])
 
     if CheckWitness(TOKEN_OWNER):
         current_in_circulation = Get(ctx, TOKEN_CIRC_KEY)
@@ -111,11 +118,12 @@ def burn(ctx, args):
         if new_amount > TOKEN_TOTAL_SUPPLY:
             return False
 
-        current_balance = Get(ctx, 'BURNED_TOKENS')
+        current_balance = Get(ctx, BURN_KEY)
         new_total = amount + current_balance
-        Put(ctx, 'BURNED_TOKENS', new_total)
+        Put(ctx, BURN_KEY, new_total)
 
         # update the in circulation amount
+        # burned tokens is counted in circulation but removed from NEP5 totalSupply
         result = add_to_circulation(ctx, amount)
 
         # dispatch burn event
@@ -123,3 +131,13 @@ def burn(ctx, args):
         return True
     else:
         return False
+
+
+def tokens_burned(ctx):
+    """
+    Get the total amount of tokens burned
+
+    :return:
+        int: Total amount in burned
+    """
+    return Get(ctx, BURN_KEY)

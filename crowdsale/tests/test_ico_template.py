@@ -13,6 +13,7 @@ from senno.token import *
 
 import shutil
 import os
+import time
 
 settings.USE_DEBUG_STORAGE = True
 settings.DEBUG_STORAGE_PATH = './fixtures/debugstorage'
@@ -99,6 +100,51 @@ class TestContract(BoaFixtureTest):
         tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([bytearray(TOKEN_OWNER)])], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].GetBigInteger(), TOKEN_INITIAL_AMOUNT)
+
+
+    def test_ICOTemplate_1_start(self):
+        output = Compiler.instance().load('%s/ico_template.py' % TestContract.dirname).default
+        out = output.write()
+
+        # crowsale not start
+        tx, results, total_ops, engine = TestBuild(out, ['has_started', '[]'], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), False)
+
+        # start crowsale should fail CheckWitness
+        tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1510240782]'], self.GetWallet2(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), False)
+
+        # get crowdsale time return false since not yet start
+        tx, results, total_ops, engine = TestBuild(out, ['crowdsale_time', '[]'], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), False)
+
+        # start crowdsale
+        tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1510240782]'], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 1510240782)
+
+        # crowdsale shall not started because block timestamp less than 1510240782
+        tx, results, total_ops, engine = TestBuild(out, ['has_started', '[]'], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), False)
+
+        # start crowdsale at time earlier than latest block timestamp
+        tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1510240700]'], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 1510240700)
+
+        # get crowdsale time return timestamp
+        tx, results, total_ops, engine = TestBuild(out, ['crowdsale_time', '[]'], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 1510240700)
+
+        # crowdsale shall return started
+        tx, results, total_ops, engine = TestBuild(out, ['has_started', '[]'], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), True)
 
     def test_ICOTemplate_2(self):
 
@@ -190,7 +236,7 @@ class TestContract(BoaFixtureTest):
         # it should dispatch an event
         self.assertEqual(len(TestContract.dispatched_events), 1)
         evt = TestContract.dispatched_events[0]
-        self.assertEqual(evt.event_payload[0], b'kyc_registration')
+        # self.assertEqual(evt.event_payload[0], b'kyc_registration')
 
         # register 2 addresses at once
         tx, results, total_ops, engine = TestBuild(out, ['crowdsale_register', parse_param([self.wallet_3_script_hash.Data, self.wallet_2_script_hash.Data])], self.GetWallet1(), '0705', '05')
@@ -261,22 +307,53 @@ class TestContract(BoaFixtureTest):
         self.assertEqual(evt.amount, 10 * TOKENS_PER_NEO * 120 / 100)
         self.assertEqual(evt.addr_to, self.wallet_3_script_hash)
 
-        # test mint tokens again, this should be false since you can't do it twice
-        tx, results, total_ops, engine = TestBuild(out, ['mintTokens', '[]', '--attach-neo=10'], self.GetWallet3(), '0705', '05')
-        self.assertEqual(len(results), 1)
-        #self.assertEqual(results[0].GetBoolean(), False)
-        # comment above line since there is not limit round 
-        self.assertEqual(results[0].GetBoolean(), True)
-
         # now the minter should have a balance
         tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 10 * 2 * TOKENS_PER_NEO * 120 / 100)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100)
+
+        # test if the bonus is correct
+        ## 10%: 1510240700 - 48*60*60
+        tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1510067800]'], self.GetWallet1(), '0705', '05')
+        tx, results, total_ops, engine = TestBuild(out, ['mintTokens', '[]', '--attach-neo=10'], self.GetWallet3(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), True)
+        tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100)
+
+        ## 7%: 1510240700 - 604800
+        tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1509635800]'], self.GetWallet1(), '0705', '05')
+        tx, results, total_ops, engine = TestBuild(out, ['mintTokens', '[]', '--attach-neo=10'], self.GetWallet3(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), True)
+        tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100)
+
+        ## 3%: 1510240700 - 1209600
+        tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1509031000]'], self.GetWallet1(), '0705', '05')
+        tx, results, total_ops, engine = TestBuild(out, ['mintTokens', '[]', '--attach-neo=10'], self.GetWallet3(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), True)
+        tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100 + 10 * TOKENS_PER_NEO * 103 / 100)
+
+        ## no bonus 
+        tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1508426200]'], self.GetWallet1(), '0705', '05')
+        tx, results, total_ops, engine = TestBuild(out, ['mintTokens', '[]', '--attach-neo=10'], self.GetWallet3(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), True)
+        tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100 + 10 * TOKENS_PER_NEO * 103 / 100 + 10 * TOKENS_PER_NEO)
+
 
         # now the total circulation should be bigger
         tx, results, total_ops, engine = TestBuild(out, ['totalSupply', '[]'], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), (10 * 2 * TOKENS_PER_NEO * 120 / 100) + TOKEN_INITIAL_AMOUNT)
+        self.assertEqual(results[0].GetBigInteger(), 54000000000000 + TOKEN_INITIAL_AMOUNT)
 
     def test_ICOTemplate_6_approval(self):
 
@@ -362,7 +439,68 @@ class TestContract(BoaFixtureTest):
         output = Compiler.instance().load('%s/ico_template.py' % TestContract.dirname).default
         out = output.write()
 
-        # tranfer_from, approve, allowance
-        tx, results, total_ops, engine = TestBuild(out, ['burn', '[100000000000]'], self.GetWallet1(), '0705', '05')
+        # burn tokens
+        burn_amt = 1000000000 * 100000000
+        tx, results, total_ops, engine = TestBuild(out, ['burn', '[%s]' % burn_amt ], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].GetBoolean(), True)
+
+        # tokens burned
+        tx, results, total_ops, engine = TestBuild(out, ['tokens_burned', '[]'], self.GetWallet2(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), burn_amt)
+
+        # tokens available for sale
+        tx, results, total_ops, engine = TestBuild(out, ['crowdsale_available', '[]'], self.GetWallet2(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 54000000000000 - burn_amt)
+
+        # burned is not counted in totalSupply
+        tx, results, total_ops, engine = TestBuild(out, ['circulation', '[]'], self.GetWallet1(), '0705', '05')
+        in_circ = results[0].GetBigInteger()
+        tx, results, total_ops, engine = TestBuild(out, ['totalSupply', '[]'], self.GetWallet1(), '0705', '05')
+        total_supply = results[0].GetBigInteger()
+        self.assertEqual(in_circ, total_supply + burn_amt)
+
+    def test_ICOTemplate_7_reserve(self):
+        output = Compiler.instance().load('%s/ico_template.py' % TestContract.dirname).default
+        out = output.write()
+
+        burn_amt = 1000000000 * 100000000
+        reserve_amt = burn_amt * 2
+        reserve_amt_too_many = burn_amt * 4
+        
+        tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_1_script_hash.Data])], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 599999997599999999)
+
+        # reserve for private sale fails CheckWitness
+        tx, results, total_ops, engine = TestBuild(out, ['reserve_private', '[%s]' % reserve_amt], self.GetWallet2(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), False)
+
+        # cannot reserve too many
+        tx, results, total_ops, engine = TestBuild(out, ['reserve_private', '[%s]' % reserve_amt_too_many], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), False)
+
+        # reserve success
+        tx, results, total_ops, engine = TestBuild(out, ['reserve_private', '[%s]' % reserve_amt], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), True)
+
+        tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_1_script_hash.Data])], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 599999997599999999 + reserve_amt)
+
+        # tokens available for sale
+        tx, results, total_ops, engine = TestBuild(out, ['crowdsale_available', '[]'], self.GetWallet2(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 54000000000000 - burn_amt - reserve_amt)
+
+        # cannot reserve twice
+        tx, results, total_ops, engine = TestBuild(out, ['reserve_private', '[%s]' % 10000], self.GetWallet1(), '0705', '05')
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].GetBoolean(), False)
+
+

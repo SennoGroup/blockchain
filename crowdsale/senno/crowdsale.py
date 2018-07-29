@@ -1,4 +1,5 @@
-from boa.interop.Neo.Blockchain import GetHeight
+from boa.interop.Neo.Blockchain import GetHeight, GetHeader
+from boa.interop.Neo.Header import GetTimestamp
 from boa.interop.Neo.Runtime import CheckWitness
 from boa.interop.Neo.Action import RegisterAction
 from boa.interop.Neo.Storage import Get, Put
@@ -10,6 +11,41 @@ from senno.txio import get_asset_attachments
 OnKYCRegister = RegisterAction('kyc_registration', 'address')
 OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
 OnRefund = RegisterAction('refund', 'addr_to', 'amount')
+
+
+def start_crowdsale(ctx, args):
+    """
+    Start the crowdsale 
+
+    :param args: crowdsale start timestamp
+    :return
+        bool: Whether the crowdsale started
+    """
+    if CheckWitness(TOKEN_OWNER):
+        ts = int(args[0])
+        Put(ctx, BLOCK_SALE_START_KEY, ts)
+        return ts
+    return False
+
+
+def crowdsale_time(ctx):
+    """
+    Return crowsale start timestamp. return False if not yet start 
+    """
+    return Get(ctx, BLOCK_SALE_START_KEY)
+
+
+def has_started(ctx):
+    sale_t = crowdsale_time(ctx)
+    if sale_t:
+        current_height = GetHeight()
+        current_header = GetHeader(current_height)
+        current_timestamp = GetTimestamp(current_header)
+        if current_timestamp < sale_t:
+            return False
+        else:
+            return True
+    return False
 
 
 def kyc_register(ctx, args):
@@ -88,24 +124,27 @@ def perform_exchange(ctx):
     exchanged_tokens = attachments[2] * TOKENS_PER_NEO / 100000000
 
     # TODO: make sure the bonus rate here are correct
+    crowdsale_ts = crowdsale_time(ctx)
     height = GetHeight()
-    height_48hrs = BLOCK_SALE_START + 11520 # 48 * 60 * 60 / 15
-    height_week1 = BLOCK_SALE_START + 40320 # 7 * 24 * 60 * 60 / 15
-    height_week2 = BLOCK_SALE_START + 80640 # 14 * 24 * 60 * 60 / 15
-    height_week3 = BLOCK_SALE_START + 120960 # 21 * 24 * 60 * 60 / 15
+    header = GetHeader(height)
+    ts = GetTimestamp(header)
+    ts_48hrs = crowdsale_ts + 172800 # 48 * 60 * 60 
+    ts_week1 = crowdsale_ts + 604800 # 7 * 24 * 60 * 60 / 15
+    ts_week2 = crowdsale_ts + 1209600 # 14 * 24 * 60 * 60 / 15
+    ts_week3 = crowdsale_ts + 1814400 # 21 * 24 * 60 * 60 / 15
 
     bonus_48hrs = 20
     bonus_week1 = 10
     bonus_week2 = 7
     bonus_week3 = 3
 
-    if height < height_48hrs:
+    if ts < ts_48hrs:
         exchanged_tokens = exchanged_tokens * (100 + bonus_48hrs) / 100
-    elif height < height_week1:
+    elif ts < ts_week1:
         exchanged_tokens = exchanged_tokens * (100 + bonus_week1) / 100
-    elif height < height_week2:
+    elif ts < ts_week2:
         exchanged_tokens = exchanged_tokens * (100 + bonus_week2) / 100
-    elif height < height_week3:
+    elif ts < ts_week3:
         exchanged_tokens = exchanged_tokens * (100 + bonus_week3) / 100
 
     # if you want to exchange gas instead of neo, use this
@@ -190,7 +229,6 @@ def calculate_can_exchange(ctx, amount, address, verify_only):
     :return:
         bool: Whether or not an address can exchange a specified amount
     """
-    height = GetHeight()
 
     current_in_circulation = Get(ctx, TOKEN_CIRC_KEY)
 
@@ -199,7 +237,9 @@ def calculate_can_exchange(ctx, amount, address, verify_only):
     if new_amount > TOKEN_TOTAL_SUPPLY:
         return False
 
-    if height < BLOCK_SALE_START:
+    #if height < BLOCK_SALE_START:
+    #    return False
+    if not has_started(ctx):
         return False
 
     # if we are in free round, any amount
