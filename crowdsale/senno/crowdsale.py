@@ -124,28 +124,28 @@ def perform_exchange(ctx):
     exchanged_tokens = attachments[2] * TOKENS_PER_NEO / 100000000
 
     # TODO: make sure the bonus rate here are correct
-    crowdsale_ts = crowdsale_time(ctx)
-    height = GetHeight()
-    header = GetHeader(height)
-    ts = GetTimestamp(header)
-    ts_48hrs = crowdsale_ts + 172800 # 48 * 60 * 60 
-    ts_week1 = crowdsale_ts + 604800 # 7 * 24 * 60 * 60 / 15
-    ts_week2 = crowdsale_ts + 1209600 # 14 * 24 * 60 * 60 / 15
-    ts_week3 = crowdsale_ts + 1814400 # 21 * 24 * 60 * 60 / 15
+    # crowdsale_ts = crowdsale_time(ctx)
+    # height = GetHeight()
+    # header = GetHeader(height)
+    # ts = GetTimestamp(header)
+    # ts_48hrs = crowdsale_ts + 172800 # 48 * 60 * 60 
+    # ts_week1 = crowdsale_ts + 604800 # 7 * 24 * 60 * 60 / 15
+    # ts_week2 = crowdsale_ts + 1209600 # 14 * 24 * 60 * 60 / 15
+    # ts_week3 = crowdsale_ts + 1814400 # 21 * 24 * 60 * 60 / 15
 
-    bonus_48hrs = 20
-    bonus_week1 = 10
-    bonus_week2 = 7
-    bonus_week3 = 3
+    # bonus_48hrs = 20
+    # bonus_week1 = 10
+    # bonus_week2 = 7
+    # bonus_week3 = 3
 
-    if ts < ts_48hrs:
-        exchanged_tokens = exchanged_tokens * (100 + bonus_48hrs) / 100
-    elif ts < ts_week1:
-        exchanged_tokens = exchanged_tokens * (100 + bonus_week1) / 100
-    elif ts < ts_week2:
-        exchanged_tokens = exchanged_tokens * (100 + bonus_week2) / 100
-    elif ts < ts_week3:
-        exchanged_tokens = exchanged_tokens * (100 + bonus_week3) / 100
+    # if ts < ts_48hrs:
+    #     exchanged_tokens = exchanged_tokens * (100 + bonus_48hrs) / 100
+    # elif ts < ts_week1:
+    #     exchanged_tokens = exchanged_tokens * (100 + bonus_week1) / 100
+    # elif ts < ts_week2:
+    #     exchanged_tokens = exchanged_tokens * (100 + bonus_week2) / 100
+    # elif ts < ts_week3:
+    #     exchanged_tokens = exchanged_tokens * (100 + bonus_week3) / 100
 
     # if you want to exchange gas instead of neo, use this
     # exchanged_tokens += attachments[3] * TOKENS_PER_GAS / 100000000

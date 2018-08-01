@@ -304,13 +304,16 @@ class TestContract(BoaFixtureTest):
         self.assertEqual(len(TestContract.dispatched_events), 1)
         evt = TestContract.dispatched_events[0]
         self.assertIsInstance(evt, NotifyEvent)
-        self.assertEqual(evt.amount, 10 * TOKENS_PER_NEO * 120 / 100)
+        # self.assertEqual(evt.amount, 10 * TOKENS_PER_NEO * 120 / 100)
+        # bonus structure removed
+        self.assertEqual(evt.amount, 10 * TOKENS_PER_NEO * 100 / 100)
         self.assertEqual(evt.addr_to, self.wallet_3_script_hash)
 
         # now the minter should have a balance
         tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100)
+        # self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 100 / 100)
 
         # test if the bonus is correct
         ## 10%: 1510240700 - 48*60*60
@@ -320,7 +323,8 @@ class TestContract(BoaFixtureTest):
         self.assertEqual(results[0].GetBoolean(), True)
         tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100)
+        # self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 2)
 
         ## 7%: 1510240700 - 604800
         tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1509635800]'], self.GetWallet1(), '0705', '05')
@@ -329,7 +333,8 @@ class TestContract(BoaFixtureTest):
         self.assertEqual(results[0].GetBoolean(), True)
         tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100)
+        # self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 3)
 
         ## 3%: 1510240700 - 1209600
         tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1509031000]'], self.GetWallet1(), '0705', '05')
@@ -338,7 +343,8 @@ class TestContract(BoaFixtureTest):
         self.assertEqual(results[0].GetBoolean(), True)
         tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100 + 10 * TOKENS_PER_NEO * 103 / 100)
+        # self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100 + 10 * TOKENS_PER_NEO * 103 / 100)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 4)
 
         ## no bonus 
         tx, results, total_ops, engine = TestBuild(out, ['start_crowdsale', '[1508426200]'], self.GetWallet1(), '0705', '05')
@@ -347,13 +353,15 @@ class TestContract(BoaFixtureTest):
         self.assertEqual(results[0].GetBoolean(), True)
         tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([self.wallet_3_script_hash.Data])], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100 + 10 * TOKENS_PER_NEO * 103 / 100 + 10 * TOKENS_PER_NEO)
+        # self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 120 / 100 + 10 * TOKENS_PER_NEO * 110 / 100 + 10 * TOKENS_PER_NEO * 107 / 100 + 10 * TOKENS_PER_NEO * 103 / 100 + 10 * TOKENS_PER_NEO)
+        self.assertEqual(results[0].GetBigInteger(), 10 * TOKENS_PER_NEO * 5)
 
 
         # now the total circulation should be bigger
         tx, results, total_ops, engine = TestBuild(out, ['totalSupply', '[]'], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 54000000000000 + TOKEN_INITIAL_AMOUNT)
+        # self.assertEqual(results[0].GetBigInteger(), 54000000000000 + TOKEN_INITIAL_AMOUNT)
+        self.assertEqual(results[0].GetBigInteger(), 50000000000000 + TOKEN_INITIAL_AMOUNT)
 
     def test_ICOTemplate_6_approval(self):
 
@@ -453,7 +461,8 @@ class TestContract(BoaFixtureTest):
         # tokens available for sale
         tx, results, total_ops, engine = TestBuild(out, ['crowdsale_available', '[]'], self.GetWallet2(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 54000000000000 - burn_amt)
+        # self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 54000000000000 - burn_amt)
+        self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 50000000000000 - burn_amt)
 
         # burned is not counted in totalSupply
         tx, results, total_ops, engine = TestBuild(out, ['circulation', '[]'], self.GetWallet1(), '0705', '05')
@@ -496,11 +505,12 @@ class TestContract(BoaFixtureTest):
         # tokens available for sale
         tx, results, total_ops, engine = TestBuild(out, ['crowdsale_available', '[]'], self.GetWallet2(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 54000000000000 - burn_amt - reserve_amt)
+        # self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 54000000000000 - burn_amt - reserve_amt)
+        self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 50000000000000 - burn_amt - reserve_amt)
 
-        # cannot reserve twice
+        # can reserve twice
         tx, results, total_ops, engine = TestBuild(out, ['reserve_private', '[%s]' % 10000], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBoolean(), False)
+        self.assertEqual(results[0].GetBoolean(), True)
 
 
