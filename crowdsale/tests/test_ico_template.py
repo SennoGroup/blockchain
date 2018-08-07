@@ -71,7 +71,9 @@ class TestContract(BoaFixtureTest):
 
         tx, results, total_ops, engine = TestBuild(out, ['totalSupply', '[]'], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), 0)
+        # self.assertEqual(results[0].GetBigInteger(), 0)
+        # total supply shall be 10b
+        self.assertEqual(results[0].GetBigInteger(), 1000000000000000000)
 
         tx, results, total_ops, engine = TestBuild(out, ['nonexistentmethod', '[]'], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
@@ -94,7 +96,9 @@ class TestContract(BoaFixtureTest):
         # now total supply should be equal to the initial owner amount
         tx, results, total_ops, engine = TestBuild(out, ['totalSupply', '[]'], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].GetBigInteger(), TOKEN_INITIAL_AMOUNT)
+        # self.assertEqual(results[0].GetBigInteger(), TOKEN_INITIAL_AMOUNT)
+        # by new definition, totalSupply shall be TOKEN_TOTAL_SUPPLY
+        self.assertEqual(results[0].GetBigInteger(), TOKEN_TOTAL_SUPPLY)
 
         # now the owner should have a balance of the TOKEN_INITIAL_AMOUNT
         tx, results, total_ops, engine = TestBuild(out, ['balanceOf', parse_param([bytearray(TOKEN_OWNER)])], self.GetWallet1(), '0705', '05')
@@ -358,7 +362,7 @@ class TestContract(BoaFixtureTest):
 
 
         # now the total circulation should be bigger
-        tx, results, total_ops, engine = TestBuild(out, ['totalSupply', '[]'], self.GetWallet1(), '0705', '05')
+        tx, results, total_ops, engine = TestBuild(out, ['circulation', '[]'], self.GetWallet1(), '0705', '05')
         self.assertEqual(len(results), 1)
         # self.assertEqual(results[0].GetBigInteger(), 54000000000000 + TOKEN_INITIAL_AMOUNT)
         self.assertEqual(results[0].GetBigInteger(), 50000000000000 + TOKEN_INITIAL_AMOUNT)
@@ -465,11 +469,9 @@ class TestContract(BoaFixtureTest):
         self.assertEqual(results[0].GetBigInteger(), 4000000000 * 100000000 - 50000000000000 - burn_amt)
 
         # burned is not counted in totalSupply
-        tx, results, total_ops, engine = TestBuild(out, ['circulation', '[]'], self.GetWallet1(), '0705', '05')
-        in_circ = results[0].GetBigInteger()
         tx, results, total_ops, engine = TestBuild(out, ['totalSupply', '[]'], self.GetWallet1(), '0705', '05')
         total_supply = results[0].GetBigInteger()
-        self.assertEqual(in_circ, total_supply + burn_amt)
+        self.assertEqual(TOKEN_TOTAL_SUPPLY, total_supply + burn_amt)
 
     def test_ICOTemplate_7_reserve(self):
         output = Compiler.instance().load('%s/ico_template.py' % TestContract.dirname).default

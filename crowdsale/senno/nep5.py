@@ -23,11 +23,11 @@ def handle_nep51(ctx, operation, args):
 
     elif operation == 'totalSupply':
         burned = Get(ctx, BURN_KEY)
-        in_circ = Get(ctx, TOKEN_CIRC_KEY) 
+        total_supply = TOKEN_TOTAL_SUPPLY
         if burned:
-            return in_circ - burned
+            return total_supply - burned
         else:
-            return in_circ
+            return total_supply
 
     elif operation == 'balanceOf':
         if len(args) == 1:
