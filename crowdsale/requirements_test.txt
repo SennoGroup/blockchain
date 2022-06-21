@@ -36,7 +36,7 @@ neo-boa==0.3.7
 -e git+https://github.com/CityOfZion/neo-python.git@99727d2622198c5bb1e64868780482e5b5dd043d#egg=neo_python
 neo-python-rpc==0.1.8
 neocore==0.3.6
-numpy==1.14.1
+numpy==1.22.0
 pbr==3.1.1
 peewee==2.10.2
 pluggy==0.6.0
